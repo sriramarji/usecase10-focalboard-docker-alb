@@ -27,3 +27,6 @@ variable "subnet_ids" {
   description = "value"
   type        = list(string)
 }
+
+variable "name" {
+}

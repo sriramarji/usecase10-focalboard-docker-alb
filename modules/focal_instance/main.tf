@@ -15,7 +15,7 @@ resource "aws_instance" "focal" {
                 docker run -d -p 8000:8000 mattermost/focalboard
                 EOF
   tags = {
-    Name = "focal-instance"
+    Name = var.name
   }
 }
 

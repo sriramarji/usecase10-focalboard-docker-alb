@@ -27,3 +27,9 @@ variable "my-keyname" {
   type        = string
   default     = "Hcl-prac-training"
 }
+
+variable "name" {
+  description = "value"
+  type        = string
+  default     = "focal-test"
+}
