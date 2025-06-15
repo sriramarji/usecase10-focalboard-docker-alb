@@ -19,7 +19,7 @@ variable "my-amiid" {
 variable "my-instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t2.micro"
+  default     = "t2.medium"
 }
 
 variable "my-keyname" {
