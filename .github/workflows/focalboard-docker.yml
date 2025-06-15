@@ -36,6 +36,18 @@ jobs:
           role-to-assume: arn:aws:iam::211125784755:role/uc1-alb-oidc
           aws-region: us-east-1
            
+      - name: Terraform Init
+        id: init
+        run: terraform init
+       
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -recursive
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+      
       - name: Terraform test
         id: test
         run: terraform test
@@ -55,9 +67,6 @@ jobs:
           terraform init
           terraform plan -out=tfplan.binary
           terraform show -json tfplan.binary > tfplan.json
-          
-      # - name: Format Terraform code 
-      #   run: terraform fmt -recursive
 
       - name: Run OPA Policy Check
         run: conftest test tfplan.json --policy policy/
