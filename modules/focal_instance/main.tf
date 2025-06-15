@@ -16,6 +16,7 @@ resource "aws_instance" "focal" {
                 EOF
   tags = {
     Name = var.name
+    #Owner = DevOps
   }
 }
 
