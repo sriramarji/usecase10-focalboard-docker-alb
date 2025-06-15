@@ -62,9 +62,10 @@ jobs:
         if: github.event.inputs.action == 'apply'
         run: |
           result=$(opa eval --input tfplan.json --data opa-policies/ --format raw "data.terraform.deny")
-          echo "$result"
+          echo "OPA Result: $result"
           if [[ "$result" != "[]" ]]; then
             echo "❌ Policy violations found. Failing the workflow."
+            echo "$result"
             exit 1
           fi
 
