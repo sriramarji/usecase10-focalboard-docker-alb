@@ -8,3 +8,6 @@ output "public_ip" {
   value       = aws_instance.focal.public_ip
 }
 
+output "ec2_instance_tags" {
+  value = aws_instance.focal.tags_all
+}
