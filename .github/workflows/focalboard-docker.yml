@@ -65,6 +65,7 @@ jobs:
           echo "OPA Result: $result"
           if [[ "$result" != "[]" ]]; then
             echo "❌ Policy violations found. Failing the workflow."
+            echo "$result"
             exit 1
           fi
 
