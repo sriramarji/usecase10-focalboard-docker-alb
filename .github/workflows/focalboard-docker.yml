@@ -1,69 +1,72 @@
 name: focalboard-docker
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
   workflow_dispatch:
- 
+    inputs:
+      action:
+        description: 'Terraform Action'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - terminate
+
 permissions:
-   contents: write
-   pull-requests: write
+  id-token: write
+  contents: read
 
 jobs:
   terraform:
-    name: Terraform Workflow
+    name: Terraform ${{ github.event.inputs.action }}
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false  # Important for JSON output
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_version: 1.12.2
-        
-    - name: Install Terraform Docs
-      run: |
-         wget https://github.com/terraform-docs/terraform-docs/releases/download/v0.16.0/terraform-docs-v0.16.0-linux-amd64.tar.gz         
-         tar -xvzf terraform-docs-v0.16.0-linux-amd64.tar.gz        
-         mv terraform-docs /usr/local/bin/
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::211125784755:role/uc1-alb-oidc
+          aws-region: us-east-1
 
-    - name: Verify Terraform Docs Installation
-      run: terraform-docs --version
+      - name: Initialize Terraform
+        run: terraform init
 
-    - name: Terraform Init
-      run: terraform init
-      
-    - name: Validate Terraform
-      run: terraform validate
-      
-    - name: Format Terraform code 
-      run: terraform fmt -recursive
+      - name: Validate Terraform
+        run: terraform validate
 
-    - name: Terraform Plan
-      id: plan
-      run: terraform plan -out=tfplan
+      - name: Format Terraform code
+        run: terraform fmt -recursive
 
-    - name: Generate Terraform Docs
-      run: |
-        chmod +x terraform-docs.sh
-        ./terraform-docs.sh
+      - name: Terraform Plan
+        if: github.event.inputs.action == 'apply'
+        run: terraform plan -out=tfplan.binary
 
-    - name: Comment Terraform Docs
-      if: github.event_name == 'pull_request'
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        path: terraform-docs.md
+      - name: Convert Plan to JSON
+        if: github.event.inputs.action == 'apply'
+        run: terraform show -json tfplan.binary > tfplan.json
 
-    - name: Apply Terraform
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: terraform apply -auto-approve tfplan
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+
+      - name: Run OPA Policy Check
+        if: github.event.inputs.action == 'apply'
+        run: |
+          opa eval --input tfplan.json --data opa-policies/ --format pretty "data.terraform.deny"
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -auto-approve
+
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'terminate'
+        run: terraform destroy -auto-approve
