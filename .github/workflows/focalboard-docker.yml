@@ -56,8 +56,8 @@ jobs:
           terraform plan -out=tfplan.binary
           terraform show -json tfplan.binary > tfplan.json
           
-      - name: Format Terraform code 
-        run: terraform fmt -recursive
+      # - name: Format Terraform code 
+      #   run: terraform fmt -recursive
 
       - name: Run OPA Policy Check
         run: conftest test tfplan.json --policy opa-policies/
