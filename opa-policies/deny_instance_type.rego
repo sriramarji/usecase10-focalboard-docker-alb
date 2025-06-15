@@ -1,15 +1,17 @@
-package terraform.deny
+package main
 
 deny[msg] {
-  some rc
-  rc := input.resource_changes[_]
-  instance := rc.change.after.instance_type
-  msg := sprintf("Instance type used: %v", [instance])
+  resource := input.resource_changes[_]
+  resource.type == "aws_instance"
+
+  not resource.change.after.tags["Name"]
+  msg = sprintf("Missing 'Name' tag for resource: %s", [resource.address])
 }
 
 deny[msg] {
-  some rc
-  rc := input.resource_changes[_]
-  rc.change.after.instance_type == "t2.micro"
-  msg := "t2.micro instances are not allowed"
+  resource := input.resource_changes[_]
+  resource.type == "aws_instance"
+
+  not resource.change.after.tags["Owner"]
+  msg = sprintf("Missing 'Owner' tag for resource: %s", [resource.address])
 }
