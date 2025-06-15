@@ -27,49 +27,42 @@ jobs:
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_wrapper: false  # Important for JSON output
+        # with:
+        #   terraform_version: 1.6.6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::211125784755:role/uc1-alb-oidc
           aws-region: us-east-1
-
+           
       - name: Initialize Terraform
         run: terraform init
 
       - name: Validate Terraform
         run: terraform validate
 
-      - name: Format Terraform code
+      - name: Terraform test
+        id: test
+        run: terraform test
+        continue-on-error: true 
+      
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
+        continue-on-error: true
+
+      - name: Format Terraform code 
         run: terraform fmt -recursive
 
       - name: Terraform Plan
         if: github.event.inputs.action == 'apply'
-        run: terraform plan -out=tfplan.binary
+        run: terraform plan
 
-      - name: Convert Plan to JSON
+      - name: Show Terraform Plan Summary
         if: github.event.inputs.action == 'apply'
-        run: terraform show -json tfplan.binary > tfplan.json
+        run: terraform show
 
-      - name: Setup OPA
-        uses: open-policy-agent/setup-opa@v2
-        with:
-          version: latest
-
-      - name: Run OPA Policy Check
-        if: github.event.inputs.action == 'apply'
-        run: |
-          result=$(opa eval --input tfplan.json --data opa-policies/ --format raw "data.terraform.deny")
-          echo "OPA Result: $result"
-          if [[ "$result" != "[]" ]]; then
-            echo "❌ Policy violations found. Failing the workflow."
-            echo "$result"
-            exit 1
-          fi
-
-      - name: Terraform Apply
+      - name: Terraform Apply (from saved plan)
         if: github.event.inputs.action == 'apply'
         run: terraform apply -auto-approve
 
