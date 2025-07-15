@@ -73,9 +73,9 @@ jobs:
         run: conftest test tfplan.json --policy policy/
         continue-on-error: true
      
-      # - name: Terraform Apply (from saved plan)
-      #   if: github.event.inputs.action == 'apply'
-      #   run: terraform apply -auto-approve
+      - name: Terraform Apply (from saved plan)
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -auto-approve
 
       - name: Terraform Destroy
         if: github.event.inputs.action == 'terminate'
