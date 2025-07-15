@@ -1,4 +1,4 @@
-name: focalboard-docker
+name: focalboard-docker-latest
 
 on:
   workflow_dispatch:
